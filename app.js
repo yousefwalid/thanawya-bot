@@ -23,8 +23,6 @@ const getResult = async function (seatingNo) {
       )
     ).data;
 
-    await fs.writeFileSync('index.html', response);
-
     const doc = new JSDOM(response).window.document;
     return {
       id: doc.querySelector('#pills-tab > li:nth-child(1) > h1').textContent,
@@ -43,7 +41,8 @@ const getResult = async function (seatingNo) {
       ).textContent,
     };
   } catch (error) {
-    console.log(error);
+    if (error.isAxiosError && error.code === 'ECONNABORTED') return 'timeout';
+
     return 'null';
   }
 };
