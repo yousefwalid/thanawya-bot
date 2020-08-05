@@ -1,4 +1,5 @@
-const superagent = require('superagent');
+const axios = require('axios');
+const querystring = require('querystring');
 const fs = require('fs');
 const cliProgress = require('cli-progress');
 const jsdom = require('jsdom');
@@ -8,15 +9,23 @@ const url = new URL('https://natega.youm7.com/Home/Result');
 
 const getResult = async function (seatingNo) {
   try {
-    const response = await superagent
-      .post(url)
-      .send({
-        seating_no: String(seatingNo),
-      })
-      .set('content-type', 'application/x-www-form-urlencoded')
-      .set('referer', 'https://natega.youm7.com/');
+    const response = (
+      await axios.post(
+        'https://natega.youm7.com/Home/Result',
+        querystring.stringify({ seating_no: String(seatingNo) }),
+        {
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            referer: 'https://natega.youm7.com/',
+          },
+          timeout: 5000,
+        }
+      )
+    ).data;
 
-    const doc = new JSDOM(response.text).window.document;
+    await fs.writeFileSync('index.html', response);
+
+    const doc = new JSDOM(response).window.document;
     return {
       id: doc.querySelector('#pills-tab > li:nth-child(1) > h1').textContent,
       name: doc.querySelector(
@@ -34,6 +43,7 @@ const getResult = async function (seatingNo) {
       ).textContent,
     };
   } catch (error) {
+    console.log(error);
     return 'null';
   }
 };
@@ -48,7 +58,7 @@ const getResult = async function (seatingNo) {
   let end = Number(process.argv[3]);
 
   const bar = new cliProgress.SingleBar({}, cliProgress.Presets.shades_classic);
-  bar.start(end - start, 0);
+  bar.start(end - start + 1, 0);
 
   const file = fs.createWriteStream(`${start}-${end}.json`);
   file.write('[\n');

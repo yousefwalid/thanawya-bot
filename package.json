@@ -9,8 +9,8 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "axios": "^0.19.2",
     "cli-progress": "^3.8.2",
-    "jsdom": "^16.3.0",
-    "superagent": "^5.3.1"
+    "jsdom": "^16.3.0"
   }
 }
