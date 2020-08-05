@@ -38,8 +38,6 @@ const getResult = async function (seatingNo) {
   }
 };
 
-results = [];
-
 (async function () {
   if (process.argv.length !== 4) {
     console.error('Please provide launch arguments');
@@ -52,21 +50,24 @@ results = [];
   const bar = new cliProgress.SingleBar({}, cliProgress.Presets.shades_classic);
   bar.start(end - start, 0);
 
+  const file = fs.createWriteStream(`${start}-${end}.json`);
+  file.write('[\n');
+
   const time1 = Date.now();
 
   for (let i = start; i <= end; i++) {
     const result = await getResult(i);
-    results.push(result);
+    file.write(JSON.stringify(result, null, 4) + ',\n');
     bar.increment();
   }
 
-  bar.stop();
+  file.write(']');
 
   const time2 = Date.now();
 
-  console.log('Fetching took ', (time2 - time1) / 1000, ' seconds');
+  bar.stop();
 
-  await fs.writeFileSync('data.json', JSON.stringify(results, null, 4));
+  console.log('Fetching took ', (time2 - time1) / 1000, ' seconds');
 
   console.log('Done writing data');
 })();
