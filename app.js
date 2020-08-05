@@ -1,6 +1,5 @@
-const axios = require('axios');
-const querystring = require('querystring');
 const fs = require('fs');
+const superagent = require('superagent');
 const cliProgress = require('cli-progress');
 const jsdom = require('jsdom');
 const { JSDOM } = jsdom;
@@ -9,21 +8,18 @@ const url = new URL('https://natega.youm7.com/Home/Result');
 
 const getResult = async function (seatingNo) {
   try {
-    const response = (
-      await axios.post(
-        'https://natega.youm7.com/Home/Result',
-        querystring.stringify({ seating_no: String(seatingNo) }),
-        {
-          headers: {
-            'Content-Type': 'application/x-www-form-urlencoded',
-            referer: 'https://natega.youm7.com/',
-          },
-          timeout: 5000,
-        }
-      )
-    ).data;
+    const response = await superagent
+      .post(url)
+      .send({
+        seating_no: String(seatingNo),
+      })
+      .timeout({
+        response: 5000,
+      })
+      .set('content-type', 'application/x-www-form-urlencoded')
+      .set('referer', 'https://natega.youm7.com/');
 
-    const doc = new JSDOM(response).window.document;
+    const doc = new JSDOM(response.text).window.document;
     return {
       id: doc.querySelector('#pills-tab > li:nth-child(1) > h1').textContent,
       name: doc.querySelector(
@@ -41,8 +37,7 @@ const getResult = async function (seatingNo) {
       ).textContent,
     };
   } catch (error) {
-    if (error.isAxiosError && error.code === 'ECONNABORTED') return 'timeout';
-
+    if (error.errno === 'ETIMEDOUT') return 'timeout';
     return 'null';
   }
 };
@@ -57,7 +52,7 @@ const getResult = async function (seatingNo) {
   let end = Number(process.argv[3]);
 
   const bar = new cliProgress.SingleBar({}, cliProgress.Presets.shades_classic);
-  bar.start(end - start + 1, 0);
+  bar.start(end - start, 0);
 
   const file = fs.createWriteStream(`${start}-${end}.json`);
   file.write('[\n');
